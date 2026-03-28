@@ -1,0 +1,23 @@
+<script>
+    const status = document.getElementById('status');
+    const coords = document.getElementById('coords');
+
+    function success(position) {
+      const { latitude, longitude } = position.coords;
+      status.textContent = 'Location found and sent!';
+      coords.textContent = `Latitude: ${latitude} °, Longitude: ${longitude} °`;
+
+      // Matches your backend port 10000
+      fetch('http://localhost:10000/api/location', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ latitude, longitude, timestamp: new Date().toISOString() })
+      }).catch(err => console.error('Connection error:', err));
+    }
+
+    function error() { status.textContent = 'Unable to retrieve location'; }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.watchPosition(success, error, { enableHighAccuracy: true });
+    }
+</script>
