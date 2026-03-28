@@ -1,23 +1,56 @@
-<script>
-    const status = document.getElementById('status');
-    const coords = document.getElementById('coords');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Location Tracker</title>
+</head>
+<body>
+  <h1>Location Tracker</h1>
+  <button id="getLocationBtn">Send My Location</button>
+  <p id="status"></p>
 
-    function success(position) {
-      const { latitude, longitude } = position.coords;
-      status.textContent = 'Location found and sent!';
-      coords.textContent = `Latitude: ${latitude} °, Longitude: ${longitude} °`;
+  <script>
+    const statusEl = document.getElementById('status');
+    const button = document.getElementById('getLocationBtn');
 
-      // Matches your backend port 10000
-      fetch('http://localhost:10000/api/location', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ latitude, longitude, timestamp: new Date().toISOString() })
-      }).catch(err => console.error('Connection error:', err));
-    }
+    button.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        statusEl.textContent = 'Geolocation is not supported by your browser.';
+        return;
+      }
 
-    function error() { status.textContent = 'Unable to retrieve location'; }
+      statusEl.textContent = 'Locating…';
 
-    if (navigator.geolocation) {
-      navigator.geolocation.watchPosition(success, error, { enableHighAccuracy: true });
-    }
-</script>
+      navigator.geolocation.getCurrentPosition(success, error);
+
+      function success(position) {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+        const timestamp = new Date().toISOString();
+
+        statusEl.textContent = `Latitude: ${latitude}, Longitude: ${longitude}`;
+
+        fetch('https://location-backend-id1k.onrender.com/location', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ latitude, longitude, timestamp })
+        })
+        .then(response => response.text())
+        .then(data => {
+          statusEl.textContent += ' — Location sent successfully!';
+          console.log('Response from backend:', data);
+        })
+        .catch(err => {
+          statusEl.textContent = 'Error sending location.';
+          console.error('Error:', err);
+        });
+      }
+
+      function error() {
+        statusEl.textContent = 'Unable to retrieve your location.';
+      }
+    });
+  </script>
+</body>
+</html>
